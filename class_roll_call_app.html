@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>像素风上课抽签器</title>
+<!-- 引入像素字体 -->
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap" rel="stylesheet"/>
+<!-- 引入五彩纸屑特效库 -->
+<script src="https://image.uc.cn/s/uae/g/3n/mos-production/cdn.jsdelivr.net/npm/canvas-confetti/1.6.0/dist/confetti.browser.min.js"></script>
+<style>
+        :root {
+            --bg-color: #202028;
+            --screen-bg: #98c39c; /* 类似GameBoy的绿色背景 */
+            --screen-active: #8bac0f;
+            --primary-color: #d32f2f;
+            --primary-shadow: #9a0007;
+            --secondary-color: #388e3c;
+            --secondary-shadow: #1b5e20;
+            --text-color: #0f380f;
+            --highlight: #306230;
+            --pixel-border: 4px solid #0f380f;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: #fff;
+            font-family: 'Press Start 2P', cursive; /* 像素字体 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            image-rendering: pixelated;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: #c0c0c0;
+            border: 4px solid #fff;
+            box-shadow: 
+                -4px 0 0 0 #808080,
+                4px 0 0 0 #fff,
+                0 -4px 0 0 #fff,
+                0 4px 0 0 #808080,
+                8px 8px 0 0 rgba(0,0,0,0.5);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        header {
+            text-align: center;
+            color: #000;
+            text-shadow: 2px 2px 0 #fff;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        /* 主屏幕区域 */
+        .screen-container {
+            background-color: #555;
+            padding: 15px;
+            border-radius: 4px;
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5);
+        }
+
+        .screen {
+            background-color: var(--screen-bg);
+            border: var(--pixel-border);
+            height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 2px 2px 0 rgba(0,0,0,0.2);
+        }
+
+        /* 扫描线效果 */
+        .screen::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 4px;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .student-name {
+            font-size: 2rem;
+            color: var(--text-color);
+            text-align: center;
+            z-index: 1;
+            word-break: break-all;
+            padding: 10px;
+            line-height: 1.2;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: var(--text-color);
+            margin-top: 10px;
+            background-color: var(--screen-bg);
+            padding: 10px;
+            border: var(--pixel-border);
+        }
+
+        /* 按钮区域 */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            padding: 10px 0;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px 10px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8rem;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            text-transform: uppercase;
+            transition: transform 0.1s;
+        }
+
+        .btn:active {
+            transform: translate(2px, 2px);
+        }
+
+        .btn-draw {
+            background-color: var(--primary-color);
+            box-shadow: 
+                inset -4px -4px 0px var(--primary-shadow),
+                inset 4px 4px 0px #ff6659,
+                0 4px 0 var(--primary-shadow);
+        }
+
+        .btn-draw:active {
+            box-shadow: 
+                inset -2px -2px 0px var(--primary-shadow),
+                inset 2px 2px 0px #ff6659,
+                0 2px 0 var(--primary-shadow);
+        }
+
+        .btn-reset {
+            background-color: var(--secondary-color);
+            box-shadow: 
+                inset -4px -4px 0px var(--secondary-shadow),
+                inset 4px 4px 0px #66bb6a,
+                0 4px 0 var(--secondary-shadow);
+        }
+
+        .btn-reset:active {
+            box-shadow: 
+                inset -2px -2px 0px var(--secondary-shadow),
+                inset 2px 2px 0px #66bb6a,
+                0 2px 0 var(--secondary-shadow);
+        }
+
+        .btn:disabled {
+            background-color: #777;
+            box-shadow: none;
+            color: #aaa;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 历史记录区域 */
+        .history-section {
+            border-top: 4px solid #808080;
+            padding-top: 15px;
+        }
+
+        .history-title {
+            font-size: 0.7rem;
+            color: #000;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+            gap: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            background: #000;
+            padding: 10px;
+            border: 2px solid #fff;
+        }
+
+        /* 自定义滚动条 */
+        .history-grid::-webkit-scrollbar {
+            width: 10px;
+        }
+        .history-grid::-webkit-scrollbar-track {
+            background: #333;
+        }
+        .history-grid::-webkit-scrollbar-thumb {
+            background: #888;
+            border: 1px solid #000;
+        }
+
+        .history-item {
+            background-color: #333;
+            color: #fff;
+            font-size: 0.6rem;
+            padding: 5px;
+            text-align: center;
+            border: 2px solid #555;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        /* 抽签时的动画类 */
+        .rolling {
+            animation: glitch 0.2s infinite;
+            color: var(--highlight);
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 480px) {
+            .student-name { font-size: 1.5rem; }
+            .btn { font-size: 0.7rem; padding: 12px 5px; }
+            .container { padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>LUCKY DRAW</h1>
+<div style="font-size: 0.6rem; color: #555; margin-top: 5px;">CLASSROOM EDITION</div>
+</header>
+<main>
+<div class="screen-container">
+<div aria-live="polite" class="screen">
+<div class="student-name" id="display-area">READY</div>
+</div>
+<div class="status-bar">
+<span id="status-text">STATUS: IDLE</span>
+<span id="count-text">REMAINING: 56</span>
+</div>
+</div>
+<div class="controls">
+<button class="btn btn-draw" id="draw-btn">抽签 (DRAW)</button>
+<button class="btn btn-reset" id="reset-btn">重置 (RESET)</button>
+</div>
+<div class="history-section">
+<div class="history-title">PICKED STUDENTS</div>
+<div class="history-grid" id="history-grid">
+<!-- 历史记录动态插入 -->
+</div>
+</div>
+</main>
+</div>
+<script>
+        // 学生名单数据 
+        const initialStudents = [
+            "伍杨", "林翔", "卢龙","方宗暗","刘懒","王年根"
+        ];
+
+        // 状态管理
+        let remainingStudents = [...initialStudents];
+        let isRolling = false;
+        let rollInterval;
+
+        // DOM 元素
+        const displayArea = document.getElementById('display-area');
+        const drawBtn = document.getElementById('draw-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const countText = document.getElementById('count-text');
+        const statusText = document.getElementById('status-text');
+        const historyGrid = document.getElementById('history-grid');
+
+        // 初始化
+        function init() {
+            updateCount();
+            renderHistory();
+        }
+
+        // 更新剩余人数显示
+        function updateCount() {
+            countText.textContent = `REMAINING: ${remainingStudents.length}`;
+        }
+
+        // 渲染历史记录 (反向显示，最新的在最前)
+        function renderHistory() {
+            historyGrid.innerHTML = '';
+            // 计算已抽取的学生
+            const picked = initialStudents.filter(s => !remainingStudents.includes(s));
+            
+            picked.forEach(name => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.textContent = name;
+                historyGrid.appendChild(div);
+            });
+        }
+
+        // 抽签逻辑
+        function startDraw() {
+            if (isRolling) return;
+            if (remainingStudents.length === 0) {
+                displayArea.textContent = "EMPTY!";
+                displayArea.classList.add('rolling');
+                setTimeout(() => displayArea.classList.remove('rolling'), 500);
+                return;
+            }
+
+            isRolling = true;
+            drawBtn.disabled = true;
+            resetBtn.disabled = true;
+            statusText.textContent = "STATUS: ROLLING...";
+            displayArea.classList.add('rolling');
+
+            // 视觉滚动效果
+            let speed = 50;
+            let counter = 0;
+            const totalRolls = 20; // 滚动多少次后停下
+
+            rollInterval = setInterval(() => {
+                // 随机显示一个名字作为动画效果
+                const randomIndex = Math.floor(Math.random() * remainingStudents.length);
+                displayArea.textContent = remainingStudents[randomIndex];
+                
+                counter++;
+                if (counter >= totalRolls) {
+                    finalizeDraw();
+                }
+            }, speed);
+        }
+
+        // 确定最终结果
+        function finalizeDraw() {
+            clearInterval(rollInterval);
+            
+            // 真正的随机抽取逻辑
+            const winnerIndex = Math.floor(Math.random() * remainingStudents.length);
+            const winnerName = remainingStudents[winnerIndex];
+
+            // 从剩余名单中移除
+            remainingStudents.splice(winnerIndex, 1);
+
+            // 更新UI
+            displayArea.textContent = winnerName;
+            displayArea.classList.remove('rolling');
+            statusText.textContent = "STATUS: WINNER!";
+            updateCount();
+            renderHistory();
+
+            // 触发五彩纸屑特效
+            triggerConfetti();
+
+            // 恢复按钮状态
+            isRolling = false;
+            drawBtn.disabled = false;
+            resetBtn.disabled = false;
+        }
+
+        // 重置逻辑
+        function resetApp() {
+            if (isRolling) return;
+
+            // 简单的确认机制（非原生alert，使用UI状态变化）
+            // 这里为了流畅体验直接重置，并给视觉反馈
+            remainingStudents = [...initialStudents];
+            displayArea.textContent = "READY";
+            statusText.textContent = "STATUS: IDLE";
+            updateCount();
+            renderHistory();
+            
+            // 按钮点击反馈动画
+            resetBtn.style.transform = "scale(0.95)";
+            setTimeout(() => resetBtn.style.transform = "scale(1)", 100);
+        }
+
+        // 五彩纸屑特效配置
+        function triggerConfetti() {
+            const count = 200;
+            const defaults = {
+                origin: { y: 0.7 }
+            };
+
+            function fire(particleRatio, opts) {
+                confetti(Object.assign({}, defaults, opts, {
+                    particleCount: Math.floor(count * particleRatio)
+                }));
+            }
+
+            fire(0.25, { spread: 26, startVelocity: 55, colors: ['#ff0055', '#00e436'] });
+            fire(0.2, { spread: 60, colors: ['#ffcc00', '#00ccff'] });
+            fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+            fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+            fire(0.1, { spread: 120, startVelocity: 45 });
+        }
+
+        // 事件监听
+        drawBtn.addEventListener('click', startDraw);
+        resetBtn.addEventListener('click', resetApp);
+
+        // 启动初始化
+        init();
+
+    </script>
+</body>
+</html>
