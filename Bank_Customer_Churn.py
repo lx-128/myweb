@@ -283,47 +283,42 @@ class ClusteringAnalyzer:
     
     def plot_clusters_2d(self, X_pca, save_path='clusters_2d.png'):
         """
-        绘制2D聚类可视化
+        绘制2D聚类可视化散点图
         
         Args:
             X_pca (ndarray): PCA降维后的数据
             save_path (str): 保存路径
         """
+        print("\n🎨 生成2D聚类散点图...")
         plt.figure(figsize=(12, 8))
         
         # 定义颜色和标记
-        colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8']
-        markers = ['o', 's', '^', 'D', 'v']
+        colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#FF8C94', '#A8D8EA']
+        markers = ['o', 's', '^', 'D', 'v', 'p', '*']
         
-        # 绘制各簇
+        # 绘制各簇的数据点
         for cluster_id in range(self.n_clusters):
             mask = self.labels == cluster_id
             plt.scatter(X_pca[mask, 0], X_pca[mask, 1],
                        c=colors[cluster_id % len(colors)],
                        marker=markers[cluster_id % len(markers)],
-                       s=100, alpha=0.6, label=f'簇 {cluster_id}',
+                       s=80, alpha=0.7, label=f'簇 {cluster_id}',
                        edgecolors='black', linewidth=0.5)
         
-        # 绘制聚类中心（在2D投影空间中）
-        plt.scatter(self.cluster_centers[:, 0] if X_pca.shape[1] >= 2 else self.cluster_centers[:, 0],
-                   self.cluster_centers[:, 1] if X_pca.shape[1] >= 2 else np.zeros(len(self.cluster_centers)),
-                   c='red', marker='*', s=500, edgecolors='black',
-                   linewidth=2, label='聚类中心', zorder=5)
-        
-        plt.xlabel(f'第1主成分 (PCA1)', fontsize=12, fontweight='bold')
-        plt.ylabel(f'第2主成分 (PCA2)', fontsize=12, fontweight='bold')
-        plt.title(f'K-Means聚类结果 (K={self.n_clusters})', fontsize=14, fontweight='bold')
-        plt.legend(fontsize=11, loc='best')
-        plt.grid(True, alpha=0.3)
+        plt.xlabel(f'PC1 (第一主成分)', fontsize=12, fontweight='bold')
+        plt.ylabel(f'PC2 (第二主成分)', fontsize=12, fontweight='bold')
+        plt.title(f'K-Means聚类结果 - 2D散点图 (K={self.n_clusters})', fontsize=14, fontweight='bold')
+        plt.legend(fontsize=11, loc='best', framealpha=0.9)
+        plt.grid(True, alpha=0.3, linestyle='--')
         
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"\n✓ 聚类可视化已保存: {save_path}")
+        print(f"✓ 2D聚类散点图已保存: {save_path}")
         plt.close()
     
     def plot_clusters_3d(self, X_pca, save_path='clusters_3d.png'):
         """
-        绘制3D聚类可视化
+        绘制3D聚类可视化散点图
         
         Args:
             X_pca (ndarray): PCA降维后的数据
@@ -333,32 +328,68 @@ class ClusteringAnalyzer:
             print("⚠️  数据维度不足3维，跳过3D可视化")
             return
         
+        print("\n🎨 生成3D聚类散点图...")
         from mpl_toolkits.mplot3d import Axes3D
         
         fig = plt.figure(figsize=(12, 9))
         ax = fig.add_subplot(111, projection='3d')
         
-        colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8']
-        markers = ['o', 's', '^', 'D', 'v']
+        colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#FF8C94', '#A8D8EA']
+        markers = ['o', 's', '^', 'D', 'v', 'p', '*']
         
         for cluster_id in range(self.n_clusters):
             mask = self.labels == cluster_id
             ax.scatter(X_pca[mask, 0], X_pca[mask, 1], X_pca[mask, 2],
                       c=colors[cluster_id % len(colors)],
                       marker=markers[cluster_id % len(markers)],
-                      s=100, alpha=0.6, label=f'簇 {cluster_id}',
+                      s=80, alpha=0.7, label=f'簇 {cluster_id}',
                       edgecolors='black', linewidth=0.5)
         
-        ax.set_xlabel('PCA 1', fontsize=11, fontweight='bold')
-        ax.set_ylabel('PCA 2', fontsize=11, fontweight='bold')
-        ax.set_zlabel('PCA 3', fontsize=11, fontweight='bold')
-        ax.set_title(f'K-Means聚类结果 (3D视图, K={self.n_clusters})', 
+        ax.set_xlabel('PC1', fontsize=11, fontweight='bold')
+        ax.set_ylabel('PC2', fontsize=11, fontweight='bold')
+        ax.set_zlabel('PC3', fontsize=11, fontweight='bold')
+        ax.set_title(f'K-Means聚类结果 - 3D散点图 (K={self.n_clusters})', 
                     fontsize=13, fontweight='bold')
         ax.legend(fontsize=10, loc='best')
         
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"✓ 3D聚类可视化已保存: {save_path}")
+        print(f"✓ 3D聚类散点图已保存: {save_path}")
+        plt.close()
+    
+    def plot_cluster_distribution(self, save_path='cluster_distribution.png'):
+        """
+        绘制聚类分布柱状图
+        
+        Args:
+            save_path (str): 保存路径
+        """
+        print("\n🎨 生成聚类分布柱状图...")
+        unique, counts = np.unique(self.labels, return_counts=True)
+        
+        fig, ax = plt.subplots(figsize=(10, 6))
+        
+        colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#FF8C94', '#A8D8EA']
+        bars = ax.bar([f'簇 {i}' for i in unique], counts, 
+                      color=[colors[i % len(colors)] for i in unique],
+                      edgecolor='black', linewidth=1.5, alpha=0.8)
+        
+        # 添加数值标签
+        for bar, count in zip(bars, counts):
+            height = bar.get_height()
+            percentage = (count / len(self.labels)) * 100
+            ax.text(bar.get_x() + bar.get_width()/2., height,
+                   f'{int(count)}\n({percentage:.1f}%)',
+                   ha='center', va='bottom', fontsize=11, fontweight='bold')
+        
+        ax.set_xlabel('聚类簇', fontsize=12, fontweight='bold')
+        ax.set_ylabel('样本数量', fontsize=12, fontweight='bold')
+        ax.set_title(f'各簇样本分布 (总样本数: {len(self.labels)})', fontsize=13, fontweight='bold')
+        ax.grid(True, alpha=0.3, axis='y', linestyle='--')
+        
+        plt.tight_layout()
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"✓ 聚类分布柱状图已保存: {save_path}")
         plt.close()
 
 
@@ -566,7 +597,7 @@ class BankCustomerDataProcessor:
         return X
     
     def normalize_data(self, X):
-        """数��标准化"""
+        """数据标准化"""
         print("\n" + "=" * 60)
         print("📏 第六步: 数据标准化 (Standardization)")
         print("=" * 60)
@@ -619,7 +650,7 @@ class BankCustomerDataProcessor:
     def perform_clustering(self, X_normalized, optimal_k):
         """执行聚类分析"""
         print("\n" + "=" * 60)
-        print("🎨 第九步: 执行K-Means聚类")
+        print("🎨 第九步: 执行K-Means聚类与可视化")
         print("=" * 60)
         
         clustering = ClusteringAnalyzer(X_normalized, n_clusters=optimal_k)
@@ -631,12 +662,17 @@ class BankCustomerDataProcessor:
             self.feature_columns
         )
         
-        # 聚类可视化（需要降维数据）
+        # 生成多种聚类可视化
+        print("\n生成聚类可视化...")
+        
         if self.X_pca.shape[1] >= 2:
-            clustering.plot_clusters_2d(self.X_pca, 'clusters_2d.png')
+            clustering.plot_clusters_2d(self.X_pca, 'clusters_2d_scatter.png')
         
         if self.X_pca.shape[1] >= 3:
-            clustering.plot_clusters_3d(self.X_pca, 'clusters_3d.png')
+            clustering.plot_clusters_3d(self.X_pca, 'clusters_3d_scatter.png')
+        
+        # 绘制聚类分布
+        clustering.plot_cluster_distribution('cluster_distribution.png')
         
         self.clustering_results['clustering'] = clustering
         self.clustering_results['cluster_stats'] = cluster_stats
@@ -779,8 +815,9 @@ class BankCustomerDataProcessor:
         print(f"  ✓ pca_variance_report.txt - PCA方差贡献率报告")
         print(f"  ✓ clustering_analysis_report.txt - 聚类分析报告")
         print(f"  ✓ elbow_curve.png - 手肘法曲线图")
-        print(f"  ✓ clusters_2d.png - 2D聚类可视化")
-        print(f"  ✓ clusters_3d.png - 3D聚类可视化 (如果适用)")
+        print(f"  ✓ clusters_2d_scatter.png - 2D聚类散点图 ⭐")
+        print(f"  ✓ clusters_3d_scatter.png - 3D聚类散点图 ⭐")
+        print(f"  ✓ cluster_distribution.png - 聚类分布柱状图 ⭐")
     
     def run_full_pipeline(self):
         """运行完整数据处理管道"""
