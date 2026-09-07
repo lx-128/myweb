@@ -1,0 +1,14 @@
+# .gitignore
+__pycache__/
+*.pyc
+.env
+.vscode/
+.data/
+.DS_Store
+node_modules/
+
+# Streamlit
+.streamlit/
+
+# Playwright browsers
+playwright/
